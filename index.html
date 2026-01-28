@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MyPTP JSON Sender v3.1</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: rgba(17,24,39,.86);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --line: rgba(255,255,255,.10);
+      --accent: #8b5cf6;
+      --accent2: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --shadow: 0 16px 40px rgba(0,0,0,.38);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(139,92,246,.22), transparent 70%),
+        radial-gradient(900px 500px at 90% 0%, rgba(34,197,94,.12), transparent 70%),
+        var(--bg);
+      line-height: 1.35;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px 14px 60px; }
+    header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom: 14px; }
+    h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+    .sub { margin-top:6px; font-size:12px; color: var(--muted); }
+    .pill {
+      display:inline-flex; gap:8px; align-items:center;
+      padding:8px 10px; border:1px solid var(--line); border-radius:999px;
+      color:var(--muted); font-size:12px; background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .grid { display:grid; grid-template-columns: 1.25fr .75fr; gap: 14px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .card h2 { font-size: 14px; margin: 0 0 10px; color: #f3f4f6; }
+    label { display:block; font-size: 12px; color: var(--muted); margin: 8px 0 6px; }
+    textarea {
+      width: 100%;
+      min-height: 240px;
+      padding: 12px 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.4;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+    }
+    .btnbar { display:flex; flex-wrap:wrap; gap:10px; margin-top: 10px; }
+    button {
+      appearance:none;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      cursor: pointer;
+      flex: 1 1 auto;
+      min-width: 150px;
+    }
+    button.primary {
+      background: linear-gradient(135deg, rgba(139,92,246,.95), rgba(139,92,246,.55));
+      border-color: rgba(139,92,246,.75);
+    }
+    button.secondary {
+      background: rgba(34,197,94,.14);
+      border-color: rgba(34,197,94,.35);
+    }
+    button.danger {
+      background: rgba(239,68,68,.16);
+      border-color: rgba(239,68,68,.35);
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .status {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      font-size: 13px;
+      white-space: pre-wrap;
+      display:none;
+    }
+    .status.ok { border-color: rgba(34,197,94,.55); }
+    .status.ng { border-color: rgba(239,68,68,.55); }
+    .status.warn { border-color: rgba(245,158,11,.55); }
+
+    .mini { display:grid; grid-template-columns: 1fr; gap: 10px; }
+    .kv { display:grid; grid-template-columns: 130px 1fr; gap: 10px; align-items:center; margin-top: 6px; }
+    @media (max-width: 520px) {
+      .kv { grid-template-columns: 1fr; }
+      button { min-width: unset; }
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      font-family: var(--mono);
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.62);
+      display:flex; align-items:center; justify-content:center;
+      z-index: 9999;
+      padding: 14px;
+    }
+    .modal-content {
+      width: min(1040px, 96vw);
+      max-height: 86vh;
+      overflow: auto;
+      background: rgba(17,24,39,.92);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .modal-head {
+      display:flex; align-items:flex-start; justify-content:space-between; gap: 10px;
+      position: sticky; top: 0;
+      background: rgba(17,24,39,.92);
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 10px;
+      backdrop-filter: blur(6px);
+    }
+    .modal-title { font-size: 14px; margin: 0; }
+    .modal-sub { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .modal-btns { display:flex; gap:10px; flex-wrap:wrap; }
+    .tag {
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(139,92,246,.35);
+      background: rgba(139,92,246,.16);
+      color: #e9d5ff;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.12);
+      margin-top: 8px;
+      table-layout: fixed;
+    }
+    th, td {
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 12px;
+      text-align:left;
+      vertical-align: top;
+      word-break: break-word;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: rgba(255,255,255,.04);
+    }
+    tr:last-child td { border-bottom: 0; }
+    .mono { font-family: var(--mono); }
+    details {
+      border-top: 1px solid rgba(255,255,255,.08);
+      margin-top: 12px;
+      padding-top: 10px;
+    }
+    summary {
+      cursor:pointer;
+      color: var(--muted);
+      font-size: 12px;
+      list-style:none;
+    }
+    summary::-webkit-details-marker { display:none; }
+    .footer-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>MyPTP JSON Sender v3.1（貼り付け→プレビュー→送信）</h1>
+        <div class="sub">Trainingの <span class="mono">estimated_1rm</span> が空なら自動計算（Epley式 / 小数1桁）。</div>
+      </div>
+      <div class="pill"><span>Webhook</span><span class="mono">…l38914r4n64yht8fhn</span></div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>JSONを貼る</h2>
+
+        <details open>
+          <summary>セキュリティ（K方式）</summary>
+          <div class="kv">
+            <div class="tag">k= 合言葉</div>
+            <input id="kSecret" type="text" placeholder="例：random-long-secret-32chars" />
+          </div>
+          <div class="hint">空ならk無しで送る。入れたら <span class="mono">?k=...</span> を付けて送る（Make側で一致チェック）。</div>
+        </details>
+
+        <label for="json-input">JSONデータ（{"data":[...] }）</label>
+        <textarea id="json-input" placeholder='ここにJSONを貼り付けてください'></textarea>
+
+        <div class="btnbar">
+          <button id="previewBtn" class="primary">プレビュー</button>
+          <button id="formatBtn" class="secondary">整形（Pretty）</button>
+          <button id="clearBtn" class="danger">クリア</button>
+        </div>
+
+        <div class="hint">
+          e1RM計算：<span class="mono">workout_value × (1 + reps/30)</span>（reps=1は重量そのまま）。<br/>
+          送信時に Trainingの空欄 <span class="mono">estimated_1rm</span> を自動で埋める。
+        </div>
+
+        <div id="status" class="status"></div>
+      </section>
+
+      <aside class="card">
+        <h2>使い方（PC/スマホ共通）</h2>
+        <div class="mini">
+          <div class="hint">
+            1) ここにJSON貼る（君はChatGPT生成をコピペ）<br/>
+            2) プレビューで確認<br/>
+            3) 送信
+          </div>
+          <details>
+            <summary>送信先URL（固定）</summary>
+            <div class="footer-note mono" style="word-break:break-all; margin-top:8px;">https://hook.eu2.make.com/65il8xggyrg8snl38914r4n64yht8fhn</div>
+          </details>
+          <details>
+            <summary>モバイル運用のコツ</summary>
+            <div class="hint" style="margin-top:8px;">
+              ・Netlify/GitHub Pagesに置いて <span class="mono">https://</span> で開くと安定しやすい。<br/>
+              ・iPhoneはSafari→共有→「ホーム画面に追加」で実質アプリ化できる。
+            </div>
+          </details>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+  // ====== 設定 ======
+  const WEBHOOK_BASE = "https://hook.eu2.make.com/65il8xggyrg8snl38914r4n64yht8fhn";
+  const STORAGE_KEY_JSON = "myptp_json_v31";
+  const STORAGE_KEY_K = "myptp_k_v31";
+
+  const input = document.getElementById("json-input");
+  const statusBox = document.getElementById("status");
+  const kSecret = document.getElementById("kSecret");
+
+  // restore
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_JSON);
+    if (saved) input.value = saved;
+    const savedK = localStorage.getItem(STORAGE_KEY_K);
+    if (savedK) kSecret.value = savedK;
+  } catch(e) {}
+
+  function showStatus(kind, msg) {
+    statusBox.className = "status " + kind;
+    statusBox.style.display = "block";
+    statusBox.textContent = msg;
+  }
+  function hideStatus() {
+    statusBox.style.display = "none";
+    statusBox.textContent = "";
+  }
+
+  function num(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  // Epley式（小数1桁）
+  function calcEpley1RM(weight, reps) {
+    if (!Number.isFinite(weight) || !Number.isFinite(reps)) return null;
+    if (reps <= 1) return Math.round(weight * 10) / 10;
+    const v = weight * (1 + reps / 30);
+    return Math.round(v * 10) / 10;
+  }
+
+  function normalizeAndAutofill(payload) {
+    if (!payload || !Array.isArray(payload.data)) throw new Error("dataキーが配列ではありません");
+
+    const out = {
+      ...payload,
+      data: payload.data.map((row, index) => {
+        const r = { ...row };
+        const lt = String(r.log_type || "").toLowerCase();
+
+        if (lt === "training") {
+          const w = num(r.workout_value);
+          const reps = num(r.reps);
+
+          if (w === null || reps === null) {
+            r.__error = `training行の workout_value / reps が数値ちゃう（index=${index}）`;
+            return r;
+          }
+
+          r.workout_value = w;
+          r.reps = reps;
+
+          const est = (r.estimated_1rm === "" || r.estimated_1rm === null || r.estimated_1rm === undefined)
+            ? null
+            : num(r.estimated_1rm);
+
+          if (est === null) {
+            const c = calcEpley1RM(w, reps);
+            if (c === null) {
+              r.__error = `estimated_1rm の自動計算に失敗（index=${index}）`;
+              return r;
+            }
+            r.estimated_1rm = c;
+            r.__auto1rm = true;
+          } else {
+            r.estimated_1rm = est;
+          }
+        }
+        return r;
+      })
+    };
+
+    const errs = out.data.filter(r => r && r.__error);
+    if (errs.length) {
+      const msg = errs.slice(0, 6).map(e => e.__error).join("\n");
+      throw new Error("入力エラー\n" + msg + (errs.length > 6 ? `\n...ほか${errs.length-6}件` : ""));
+    }
+
+    return out;
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[s]));
+  }
+
+  function buildWebhookUrl() {
+    const k = (kSecret.value || "").trim();
+    try { localStorage.setItem(STORAGE_KEY_K, k); } catch(e) {}
+    if (!k) return WEBHOOK_BASE;
+    const sep = WEBHOOK_BASE.includes("?") ? "&" : "?";
+    return WEBHOOK_BASE + sep + "k=" + encodeURIComponent(k);
+  }
+
+  function persistJson() {
+    try { localStorage.setItem(STORAGE_KEY_JSON, input.value); } catch(e) {}
+  }
+  input.addEventListener("input", persistJson);
+  kSecret.addEventListener("input", () => { try { localStorage.setItem(STORAGE_KEY_K, (kSecret.value||"").trim()); } catch(e) {} });
+
+  document.getElementById("clearBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    input.value = "";
+    persistJson();
+    showStatus("warn", "クリアしたで。");
+  });
+
+  document.getElementById("formatBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    hideStatus();
+    const raw = input.value.trim();
+    if (!raw) { showStatus("warn", "JSONが空やで。"); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      const normalized = normalizeAndAutofill(parsed);
+      input.value = JSON.stringify(normalized, null, 2);
+      persistJson();
+      showStatus("ok", "整形＋auto e1RM 反映したで。");
+    } catch (err) {
+      showStatus("ng", "❌ JSONの形式にエラー: " + err.message);
+    }
+  });
+
+  document.getElementById("previewBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    hideStatus();
+    const raw = input.value.trim();
+    if (!raw) { showStatus("warn", "JSONが空やで。"); return; }
+
+    let normalized;
+    try {
+      const parsed = JSON.parse(raw);
+      normalized = normalizeAndAutofill(parsed);
+    } catch (err) {
+      showStatus("ng", "❌ JSONの形式にエラー: " + err.message);
+      return;
+    }
+
+    const old = document.querySelector(".modal");
+    if (old) old.remove();
+
+    showPreviewModal(normalized);
+  });
+
+  function showPreviewModal(payload) {
+    const data = payload.data || [];
+    const workoutLogs = data.filter(x => String(x.log_type || "").toLowerCase() === "training");
+    const mealLogs = data.filter(x => String(x.log_type || "").toLowerCase() === "meal");
+
+    const modal = document.createElement("div");
+    modal.className = "modal";
+
+    const content = document.createElement("div");
+    content.className = "modal-content";
+
+    const head = document.createElement("div");
+    head.className = "modal-head";
+
+    const left = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "modal-title";
+    title.textContent = "送信前プレビュー";
+    const sub = document.createElement("div");
+    sub.className = "modal-sub";
+    sub.innerHTML = `Training: <span class="tag">${workoutLogs.length}行</span> / Meal: <span class="tag">${mealLogs.length}行</span>`;
+    left.appendChild(title);
+    left.appendChild(sub);
+
+    const right = document.createElement("div");
+    right.className = "modal-btns";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "secondary";
+    copyBtn.textContent = "JSONコピー";
+    copyBtn.onclick = async () => {
+      const txt = JSON.stringify(payload, null, 2);
+      try {
+        await navigator.clipboard.writeText(txt);
+        showStatus("ok", "JSONコピーしたで。");
+      } catch(e) {
+        input.value = txt;
+        persistJson();
+        showStatus("warn", "クリップボード無理やったから、下の欄に出しといたで。");
+      }
+    };
+
+    const sendBtn = document.createElement("button");
+    sendBtn.className = "primary";
+    sendBtn.textContent = "送信する";
+    sendBtn.onclick = async () => {
+      const url = buildWebhookUrl();
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: Object.assign({ "Content-Type": "application/json" }, (kSecret.value||"").trim() ? { "X-MyPTP-Key": (kSecret.value||"").trim() } : {}),
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          showStatus("ok", "✅ 送信成功");
+          input.value = "";
+          persistJson();
+        } else {
+          const t = await res.text().catch(() => "");
+          showStatus("ng", `❌ 送信失敗 (HTTP ${res.status})\n${t}`);
+        }
+      } catch (err) {
+        showStatus("ng", "⚠️ 通信エラー: " + (err?.message || String(err)));
+      }
+      modal.remove();
+    };
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "danger";
+    cancelBtn.textContent = "閉じる";
+    cancelBtn.onclick = () => modal.remove();
+
+    right.appendChild(copyBtn);
+    right.appendChild(sendBtn);
+    right.appendChild(cancelBtn);
+
+    head.appendChild(left);
+    head.appendChild(right);
+
+    content.appendChild(head);
+
+    if (workoutLogs.length) {
+      const h2 = document.createElement("h2");
+      h2.textContent = "トレーニングログ";
+      content.appendChild(h2);
+
+      const table = document.createElement("table");
+      const headerRow = document.createElement("tr");
+      ["日付","種目","セット区分","重量","回数","推定1RM","主働筋","備考"].forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        headerRow.appendChild(th);
+      });
+      table.appendChild(headerRow);
+
+      workoutLogs.forEach(item => {
+        const tr = document.createElement("tr");
+        const auto = item.__auto1rm ? " (auto)" : "";
+        const values = [
+          item.date ?? "",
+          item.exercise_item ?? "",
+          item.set_type ?? "",
+          `${item.workout_value ?? ""}${item.workout_unit ?? ""}`,
+          `${item.reps ?? ""}回`,
+          `${item.estimated_1rm ?? ""}${item.workout_unit ?? ""}${auto}`,
+          item.body_part_main ?? "",
+          item.note_training ?? ""
+        ];
+        values.forEach(v => {
+          const td = document.createElement("td");
+          td.textContent = String(v);
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      content.appendChild(table);
+    }
+
+    if (mealLogs.length) {
+      const h2 = document.createElement("h2");
+      h2.textContent = "ミールログ";
+      content.appendChild(h2);
+
+      const table = document.createElement("table");
+      const headerRow = document.createElement("tr");
+      ["日付","タイミング","食品名","量","カロリー","P","F","C","備考"].forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        headerRow.appendChild(th);
+      });
+      table.appendChild(headerRow);
+
+      mealLogs.forEach(item => {
+        const tr = document.createElement("tr");
+        const values = [
+          item.date ?? "",
+          item.timing ?? "",
+          item.item ?? "",
+          `${item.amount_value ?? ""}${item.amount_unit ?? ""}`,
+          item.calories ?? "",
+          item.protein ?? "",
+          item.fat ?? "",
+          item.carbs ?? "",
+          item.note_meal ?? ""
+        ];
+        values.forEach(v => {
+          const td = document.createElement("td");
+          td.textContent = String(v);
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      content.appendChild(table);
+    }
+
+    const foot = document.createElement("div");
+    foot.className = "footer-note";
+    foot.innerHTML = `送信先: <span class="mono">${escapeHtml(buildWebhookUrl())}</span>`;
+    content.appendChild(foot);
+
+    modal.appendChild(content);
+    modal.addEventListener("click", (ev) => {
+      if (ev.target === modal) modal.remove();
+    });
+
+    document.body.appendChild(modal);
+  }
+</script>
+</body>
+</html>
