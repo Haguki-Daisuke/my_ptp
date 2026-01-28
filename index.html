@@ -25,6 +25,9 @@
       margin: 0;
       font-family: var(--sans);
       color: var(--text);
+      /* iOS Safari の勝手な文字拡大を抑制 */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
       background:
         radial-gradient(1200px 600px at 15% -10%, rgba(139,92,246,.22), transparent 70%),
         radial-gradient(900px 500px at 90% 0%, rgba(34,197,94,.12), transparent 70%),
@@ -32,14 +35,31 @@
       line-height: 1.35;
     }
     .wrap { max-width: 980px; margin: 0 auto; padding: 18px 14px 60px; }
-    header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom: 14px; }
-    h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+    header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap; /* ここが無いと、スマホでタイトルが縦に裂ける */
+    }
+    header .titlebox { flex: 1 1 280px; min-width: 0; }
+    h1 { font-size: clamp(18px, 3.8vw, 22px); margin: 0; letter-spacing: .2px; line-height: 1.15; }
     .sub { margin-top:6px; font-size:12px; color: var(--muted); }
     .pill {
       display:inline-flex; gap:8px; align-items:center;
       padding:8px 10px; border:1px solid var(--line); border-radius:999px;
       color:var(--muted); font-size:12px; background:rgba(255,255,255,.03);
       white-space:nowrap;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pill .label { flex: 0 0 auto; }
+    .pill .value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    @media (max-width: 520px) {
+      header { flex-direction: column; align-items: flex-start; }
+      .pill { width: 100%; }
     }
     .grid { display:grid; grid-template-columns: 1.25fr .75fr; gap: 14px; }
     @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
@@ -209,11 +229,14 @@
 <body>
   <div class="wrap">
     <header>
-      <div>
+      <div class="titlebox">
         <h1>MyPTP JSON Sender v3.1（貼り付け→プレビュー→送信）</h1>
         <div class="sub">Trainingの <span class="mono">estimated_1rm</span> が空なら自動計算（Epley式 / 小数1桁）。</div>
       </div>
-      <div class="pill"><span>Webhook</span><span class="mono">…l38914r4n64yht8fhn</span></div>
+      <div class="pill" title="現在の送信先Webhook（入力欄で変更できます）">
+        <span class="label">Webhook</span>
+        <span class="mono value">…l38914r4n64yht8fhn</span>
+      </div>
     </header>
 
     <div class="grid">
